@@ -19,7 +19,7 @@ public:
 	Sequence(int n)
 	{
 		if (n < 0)
-			throw "Can`t make Sequence, starting from negative number!";
+			throw "Can`t make a sequence to negative number!";
 		arr = new int[n];
 		startSize = currentSize = n;
 
@@ -33,6 +33,7 @@ public:
 			throw "Invalid index to erase!";
 		
 		shiftLeft(i);
+		--currentSize;
 	}
 
 	int get(int i) const
@@ -41,6 +42,11 @@ public:
 			throw "Invalid index to get!";
 
 		return arr[i];
+	}
+
+	int getSize() const
+	{
+		return currentSize;
 	}
 
 	~Sequence()
@@ -113,6 +119,57 @@ void testFour()
 	printf("\n");
 }
 
+void testFive()
+{
+	int size = 10;
+	Sequence s(size);
+	s.erase(0);
+	for (int i = 0; i < s.getSize(); ++i) {
+		printf("%i, ", s.get(i)); 
+	}
+	printf("\n");
+}
+
+void testSix()
+{
+	int size = 10;
+	Sequence s(size);	
+	s.erase(9);
+	s.erase(0);
+	for (int i = 0; i < s.getSize(); ++i) {
+		printf("%i, ", s.get(i));
+	}
+	printf("\n");
+}
+
+void testSeven()
+{
+	int size = 10;
+	Sequence s(size);
+	for (int i = 0; i < size; ++i) {
+		s.erase(0);
+	}
+
+	for (int i = 0; i < s.getSize(); ++i) {
+		printf("%i, ", s.get(i));
+	}
+	printf("\n");
+}
+
+void testEight()
+{
+	int size = 10;
+	Sequence s(size);
+
+	s.erase(5);
+	s.erase(6);
+
+	for (int i = 0; i < s.getSize(); ++i) {
+		printf("%i, ", s.get(i));
+	}
+	printf("\n");
+}
+
 int main()
 {
 	// Memory leaks cheching... May not work in something different than Visual studio...
@@ -124,7 +181,11 @@ int main()
 			testOne();
 			testTwo();
 			testThree();
-			testFour();
+			testFour(); 
+			testFive();
+			testSix();
+			testSeven();
+			testEight();
 		}
 		catch (const char* msg)
 		{
