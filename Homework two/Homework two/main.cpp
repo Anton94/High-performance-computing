@@ -1,5 +1,17 @@
+/*
+*	HPC Homework two
+*	Anton Vasilev Dudov
+*	#71488
+*	antonvdudov@gmail.com
+*
+*	Github repository: https://github.com/Anton94/High-performance-computing/tree/master/Homework%20two
+*   TO DO : Delete time checker!!!!
+*	TO DO : make a test where I don`t reverse all bits, only from the MSB to the end.
+*/
+
 #include <stdio.h>
-#include <iostream>
+#include <chrono>// TO DO delete it
+using namespace std::chrono;// TO DO delete it
 
 inline float derCorput(unsigned n)
 {
@@ -13,17 +25,32 @@ inline float derCorput(unsigned n)
 			++reversedBinary;
 	}
 
-	return (float)reversedBinary / (float)(1 << 30);// TO DO- optimize
+	return (float)reversedBinary / (float)(1 << 30); // TO DO- optimize
 }
 
-void derCorputTestWith(unsigned n)
+// Test - calculate the numbers from 0 to the given @n with/without printing it. 
+// If @flag- than print the values.
+void test1(unsigned n, char flag)
 {
-	printf("%d number in the van der Corput sequence is %f\n", n, derCorput(n));
+	printf("Test: get the numbers in sequence from 0 to %d\n", n);
+	auto begin = high_resolution_clock::now();
+
+	if (flag)
+		for (unsigned i = 0; i < n; ++i)
+			printf("%d number in the van der Corput sequence is %f\n", i, derCorput(i));
+	else
+		for (unsigned i = 0; i < n; ++i)
+			derCorput(i);
+
+	auto end = high_resolution_clock::now();
+	auto ticks = duration_cast<microseconds>(end - begin);
+
+	printf("It took me %d microseconds.\n", ticks.count());
 }
 
 int main()
 {
-	for (size_t i = 0; i < 20; ++i)
-		derCorputTestWith(i);
+	test1(20, 1);
+	test1(20000000, 0);
 	return 0;
 }
