@@ -9,18 +9,20 @@
 *
 *
 *
-*   TO DO : Delete time checker!!!!
-*	TO DO : Make a test where I don`t reverse all bits, only from the MSB to the end.
+*	TODO : To make a test where I don`t reverse all bits, only from the MSB to the end - (basic tests shows it`s slower).
 */
 
 #include <stdio.h>
-#include <chrono>// TO DO delete it
-using namespace std::chrono;// TO DO delete it
+//#include <chrono>			
+//using namespace std::chrono;
+
+
+
 
 inline float derCorput(unsigned n)
 {
-	unsigned bitCount = sizeof(n) * 8 ;
-	bitCount -= 2; // -1 for the sign bit (for the float dividing) and -1 for the max number, I will divide by 1000...0, so 1 bit for the divider
+	unsigned bitCount = sizeof(n) * 8;
+	bitCount -= 2; // -1 for the sign bit (for the float dividing) and -1 for the max number, I will divide by 1000...0, so 1 bit for the divider (can`t calculate number bigger than 100...0)
 
 	unsigned reversedBinary = 0;
 	for (unsigned i = 0; i < bitCount; ++i)
@@ -29,33 +31,40 @@ inline float derCorput(unsigned n)
 		reversedBinary |= ((n >> i) & 1); // If ((n >> i) & 1 == 1) THEN reversedBinary |= 1  ; (reversedBinary |= 1 === ++reversedBinary)
 	}
 
-	return (float)reversedBinary / (float)(1 << 30);
+	return (float)reversedBinary / (float)(1 << bitCount);
 }
+
+
+
 
 // Test - calculate the numbers from 0 to the given @n with/without printing it. 
 // If @flag- than print the values.
 void test1(unsigned n, char flag)
 {
-	printf("Test: get the numbers in the van der Corput sequence from 0 to %d\n", n);
-	auto begin = high_resolution_clock::now();
+	printf("Test: Geting the numbers in the van der Corput sequence [0 to %d]\n", n);
+//	auto begin = high_resolution_clock::now();
 
 	if (flag)
 		for (unsigned i = 0; i < n; ++i)
-			printf("%unumber in the van der Corput sequence is %f\n", i, derCorput(i));
+			printf("Number %3u in the van der Corput sequence is %f\n", i, derCorput(i));
 	else
 		for (unsigned i = 0; i < n; ++i)
 			derCorput(i);
 
-	auto end = high_resolution_clock::now();
-	auto ticks = duration_cast<microseconds>(end - begin);
+//	auto end = high_resolution_clock::now();
+//	auto ticks = duration_cast<microseconds>(end - begin);
 
-	printf("It took me %d microseconds.\n", ticks.count());
+//	printf("It took me %d microseconds.\n", ticks.count());
 }
 
 int main()
 {
 	test1(20, 1);
-	test1(20000000, 0);
+	test1(1000000, 0);
+	test1(10000000, 0);
+	test1(100000000, 0);
+	//test1(1000000000, 0);
+	//test1(2000000000, 0);
 
 	return 0;
 }
