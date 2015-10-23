@@ -13,16 +13,16 @@
 */
 
 #include <stdio.h>
-//#include <chrono>			
-//using namespace std::chrono;
+#include <chrono>			
+using namespace std::chrono;
 
 
 
 
 inline float derCorput(unsigned n)
 {
-	unsigned bitCount = sizeof(n) * 8;
-	bitCount -= 2; // -1 for the sign bit (for the float dividing) and -1 for the max number, I will divide by 1000...0, so 1 bit for the divider (can`t calculate number bigger than 100...0)
+	unsigned bitCount = (sizeof(unsigned) << 3) - 2;
+	// -1 for the sign bit (for the float dividing) and -1 for the max number, I will divide by 1000...0, so 1 bit for the divider (can`t calculate number bigger than 100...0)
 
 	unsigned reversedBinary = 0;
 	for (unsigned i = 0; i < bitCount; ++i)
@@ -42,7 +42,7 @@ inline float derCorput(unsigned n)
 void test1(unsigned n, char flag)
 {
 	printf("Test: Geting the numbers in the van der Corput sequence [0 to %d]\n", n);
-//	auto begin = high_resolution_clock::now();
+	auto begin = high_resolution_clock::now();
 
 	if (flag)
 		for (unsigned i = 0; i < n; ++i)
@@ -51,10 +51,10 @@ void test1(unsigned n, char flag)
 		for (unsigned i = 0; i < n; ++i)
 			derCorput(i);
 
-//	auto end = high_resolution_clock::now();
-//	auto ticks = duration_cast<microseconds>(end - begin);
+	auto end = high_resolution_clock::now();
+	auto ticks = duration_cast<microseconds>(end - begin);
 
-//	printf("It took me %d microseconds.\n", ticks.count());
+	printf("It took me %d microseconds.\n", ticks.count());
 }
 
 int main()
@@ -63,8 +63,6 @@ int main()
 	test1(1000000, 0);
 	test1(10000000, 0);
 	test1(100000000, 0);
-	//test1(1000000000, 0);
-	//test1(2000000000, 0);
 
 	return 0;
 }
