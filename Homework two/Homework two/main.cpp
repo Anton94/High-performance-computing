@@ -21,7 +21,7 @@ using namespace std::chrono;
 
 inline float derCorput(unsigned n)
 {
-	unsigned bitCount = (sizeof(unsigned) << 3) - 2;
+	static unsigned bitCount = (sizeof(n) << 3) - 2;
 	// -1 for the sign bit (for the float dividing) and -1 for the max number, I will divide by 1000...0, so 1 bit for the divider (can`t calculate number bigger than 100...0)
 
 	unsigned reversedBinary = 0;
