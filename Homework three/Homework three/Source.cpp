@@ -1,6 +1,10 @@
 #include <stdio.h> // printf
 #include <cstdlib> // rand
 
+
+#include <chrono>			
+using namespace std::chrono;
+
 inline void reverseBasic(char* bytes, int numChunks);
 void testValueValidation(int size, char flagForPrintValues);
 void printArr(char * arr, int size);
@@ -171,6 +175,30 @@ inline void reverseBasicWithoutSecondLoop(char* bytes, int numChunks)
 	}
 }
 
+// Runs the given function and prints the taken time.
+void testTime(void (*pFunc)(char* , int), int numChunks)
+{	
+	int sizeMul64 = numChunks << 6;
+	char * arr = new char[sizeMul64];
+
+	printf("Starting time test with %d chunks (%d elements)!\n", numChunks, sizeMul64);
+
+	// Fill with some random values.
+	srand(0);
+	for (size_t i = 0; i < sizeMul64; ++i)
+		arr[i] = rand() % 256 - 128; // -128 to 127
+
+
+	auto begin = high_resolution_clock::now();
+
+	pFunc(arr, numChunks);
+
+	auto end = high_resolution_clock::now();
+	auto ticks = duration_cast<microseconds>(end - begin);
+
+	printf(" ---> It took me %d microseconds.\n", ticks.count());
+}
+
 
 // Basic test. Makes @size chunks of 64 elements and writes in them random values, reverse them and checks if they are ok. 
 // IF @flagForPrintValues is set, prints the valus of the arrays(and the result for every chunk).
@@ -181,7 +209,7 @@ void testValueValidation(int size, char flagForPrintValues)
 	char * arr = new char[sizeMul64];
 	char * arrReversed = new char[sizeMul64];
 
-	printf("Starting tests with %d chunks (%d elements)!", size, sizeMul64);
+	printf("Starting value validation tests with %d chunks (%d elements)!", size, sizeMul64);
 
 	// Fill with some random values.
 	srand(0);
@@ -251,9 +279,25 @@ void printArr(char * arr, int size)
 int main()
 {
 	//testValueValidation(3, true);
+
+	//testValueValidation(13, false);
+	//testValueValidation(26, false);
+	//testValueValidation(2 << 20, false); // 2 ^ 21 
+
+	testTime(reverseBasicWithoutSecondLoop, 2 << 15);
+	testTime(reverseBasic, 2 << 15);
+
+	printf("\n");
+
+	testTime(reverseBasicWithoutSecondLoop, 2 << 20);
+	testTime(reverseBasic, 2 << 20);
 	
-	testValueValidation(13, false);
-	testValueValidation(26, false);
-	testValueValidation(2 << 20, false); // 2 ^ 21 
+	printf("\n");
+	
+	testTime(reverseBasicWithoutSecondLoop, 2 << 22);
+	testTime(reverseBasic, 2 << 22);
+
+	printf("\n");
+
 	return 0;
 }
