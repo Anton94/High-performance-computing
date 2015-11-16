@@ -182,32 +182,25 @@ inline void reverseBasicWithoutSecondLoop(char* bytes, int numChunks)
 // (swap the halfs)
 inline void reverseWithIntrinsics(char * bytes, int numChunks)
 {
-	static char temp[64];
-	char * pBytes = bytes;
-	
-	__m256i firstHalf, secondHalf;
-
+	static char temp[64];	
+	static __m256i firstHalf, secondHalf;
 
 	for (int i = 0; i < numChunks; ++i)
 	{
 		// Reverse first half.
-		firstHalf = _mm256_set_epi8(pBytes[0], pBytes[1], pBytes[2], pBytes[3], pBytes[4], pBytes[5], pBytes[6], pBytes[7], pBytes[8], pBytes[9], pBytes[10], pBytes[11], pBytes[12], pBytes[13], pBytes[14], pBytes[15],
-			pBytes[16], pBytes[17], pBytes[18], pBytes[19], pBytes[20], pBytes[21], pBytes[22], pBytes[23], pBytes[24], pBytes[25], pBytes[26], pBytes[27], pBytes[28], pBytes[29], pBytes[30], pBytes[31]);
+		firstHalf = _mm256_set_epi8(bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15],
+			bytes[16], bytes[17], bytes[18], bytes[19], bytes[20], bytes[21], bytes[22], bytes[23], bytes[24], bytes[25], bytes[26], bytes[27], bytes[28], bytes[29], bytes[30], bytes[31]);
 		
 		// Reverse second half.
-		secondHalf = _mm256_set_epi8(pBytes[32], pBytes[33], pBytes[34], pBytes[35], pBytes[36], pBytes[37], pBytes[38], pBytes[39], pBytes[40], pBytes[41], pBytes[42], pBytes[43], pBytes[44], pBytes[45], pBytes[46], pBytes[47], pBytes[48],
-			pBytes[49], pBytes[50], pBytes[51], pBytes[52], pBytes[53], pBytes[54], pBytes[55], pBytes[56], pBytes[57], pBytes[58], pBytes[59], pBytes[60], pBytes[61], pBytes[62], pBytes[63]);
+		secondHalf = _mm256_set_epi8(bytes[32], bytes[33], bytes[34], bytes[35], bytes[36], bytes[37], bytes[38], bytes[39], bytes[40], bytes[41], bytes[42], bytes[43], bytes[44], bytes[45], bytes[46], bytes[47], bytes[48],
+			bytes[49], bytes[50], bytes[51], bytes[52], bytes[53], bytes[54], bytes[55], bytes[56], bytes[57], bytes[58], bytes[59], bytes[60], bytes[61], bytes[62], bytes[63]);
 
 		// write the second half at the begining, anf first one at the end.
-		_mm256_storeu_si256((__m256i*)pBytes, secondHalf);
-		_mm256_storeu_si256((__m256i*)(pBytes + 32), firstHalf);
+		_mm256_storeu_si256((__m256i*)bytes, secondHalf);
+		_mm256_storeu_si256((__m256i*)(bytes + 32), firstHalf);
 
-		pBytes += 64;
+		bytes += 64;
 	}
-
-
-
-	
 }
 
 // Runs the given function and prints the taken time.
