@@ -70,16 +70,6 @@ inline static void bar(float(&inout)[8]) {
 	}
 }
 
-void print(__m128 arg)
-{
-	float a[4];
-
-	_mm_storeu_ps(a, arg);
-	for (int i = 0; i < 4; ++i)
-		std::cout << a[i] << " ";
-	std::cout << std::setw(6) << std::endl;
-}
-
 
 static void insertion_sort(
 	float(&inout)[8]) {
@@ -114,7 +104,7 @@ static size_t verify(
 
 int main(int argc, char** argv) {
 
-	unsigned alt = 0;
+	unsigned alt = 2;
 	const bool err = argc > 2 || argc == 2 && 1 != sscanf(argv[1], "%u", &alt);
 
 	if (err || alt > 2) {
