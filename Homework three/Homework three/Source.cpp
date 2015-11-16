@@ -7,7 +7,7 @@ using namespace std::chrono;
 
 inline void reverseBasic(char* bytes, int numChunks);
 inline void reverseBasicWithoutSecondLoop(char* bytes, int numChunks);
-inline void reverseWithIntrinsics(char * bytes, int numChunks);
+inline void reverse(char * bytes, int numChunks);
 void testValueValidation(void(*pFunc)(char*, int), int size, char flagForPrintValues);
 void testTime(void(*pFunc)(char*, int), int numChunks);
 void printArr(char * arr, int size);
@@ -177,13 +177,14 @@ inline void reverseBasicWithoutSecondLoop(char* bytes, int numChunks)
 	}
 }
 
+// Reverse with intrinsics
 // First - reverse the values in the first half and second half
 // Second - copy the second half of temp array to the beginning of original one, and first half (from temp array) next to the first in original one
 // (swap the halfs)
-inline void reverseWithIntrinsics(char * bytes, int numChunks)
+inline void reverse(char * bytes, int numChunks)
 {
 	static char temp[64];	
-	static __m256i firstHalf, secondHalf;
+	__m256i firstHalf, secondHalf;
 
 	for (int i = 0; i < numChunks; ++i)
 	{
@@ -195,7 +196,7 @@ inline void reverseWithIntrinsics(char * bytes, int numChunks)
 		secondHalf = _mm256_set_epi8(bytes[32], bytes[33], bytes[34], bytes[35], bytes[36], bytes[37], bytes[38], bytes[39], bytes[40], bytes[41], bytes[42], bytes[43], bytes[44], bytes[45], bytes[46], bytes[47], bytes[48],
 			bytes[49], bytes[50], bytes[51], bytes[52], bytes[53], bytes[54], bytes[55], bytes[56], bytes[57], bytes[58], bytes[59], bytes[60], bytes[61], bytes[62], bytes[63]);
 
-		// write the second half at the begining, anf first one at the end.
+		// write the second half at the begining, and after it- first one.
 		_mm256_storeu_si256((__m256i*)bytes, secondHalf);
 		_mm256_storeu_si256((__m256i*)(bytes + 32), firstHalf);
 
@@ -264,9 +265,9 @@ void testValueValidation(void(*pFunc)(char*, int), int size, char flagForPrintVa
 
 	// Check if it`s reversed correctly.
 	if (compareArrayWithReversedOneByChunks(arr, arrReversed, size, flagForPrintValues))
-		printf(" --- [Passed!]\n");
+		printf(" ---> [Passed!]\n");
 	else
-		printf(" --- [Failed!]\n");
+		printf(" ---> [Failed!]\n");
 	// Delete memory
 	delete[] arr;
 	delete[] arrReversed;
@@ -310,7 +311,7 @@ int main()
 {
 	//testValueValidation(reverseBasicWithoutSecondLoop, 3, true);
 
-	//testValueValidation(reverseWithIntrinsics, 3, true);
+	//testValueValidation(reverse, 3, true);
 
 	printf("\n\Value validation testing Basic:\n");
 	testValueValidation(reverseBasic, 13, false);
@@ -323,24 +324,24 @@ int main()
 	testValueValidation(reverseBasicWithoutSecondLoop, 2 << 10, false); // 2 ^ 21 
 
 	printf("\n\Value validation testing with intrinsics:\n");
-	testValueValidation(reverseWithIntrinsics, 13, false);
-	testValueValidation(reverseWithIntrinsics, 26, false);
-	testValueValidation(reverseWithIntrinsics, 2 << 10, false); // 2 ^ 21 
+	testValueValidation(reverse, 13, false);
+	testValueValidation(reverse, 26, false);
+	testValueValidation(reverse, 2 << 10, false); // 2 ^ 21 
 
 	printf("\n\nTime testing (Basic, without second loop, intrinsics):\n");
-	testTime(reverseBasic, 2 << 15);
-	testTime(reverseBasicWithoutSecondLoop, 2 << 15);
-	testTime(reverseWithIntrinsics, 2 << 15);
+	testTime(reverseBasic, 1 << 16);
+	testTime(reverseBasicWithoutSecondLoop, 1 << 16);
+	testTime(reverse, 1 << 16);
 	printf("\n");
 
-	testTime(reverseBasic, 2 << 20);
-	testTime(reverseBasicWithoutSecondLoop, 2 << 20);
-	testTime(reverseWithIntrinsics, 2 << 20);	
+	testTime(reverseBasic, 1 << 20);
+	testTime(reverseBasicWithoutSecondLoop, 1 << 20);
+	testTime(reverse, 1 << 20);	
 	printf("\n");
 
-	testTime(reverseBasic, 2 << 22);
-	testTime(reverseBasicWithoutSecondLoop, 2 << 22);
-	testTime(reverseWithIntrinsics, 2 << 22);
+	testTime(reverseBasic, 1 << 24);
+	testTime(reverseBasicWithoutSecondLoop, 1 << 24);
+	testTime(reverse, 1 << 24);
 	printf("\n");
 
 	return 0;
