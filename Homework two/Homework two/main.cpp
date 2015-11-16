@@ -13,10 +13,8 @@
 */
 
 #include <stdio.h>
-#include <chrono>			
-using namespace std::chrono;
-
-
+//#include <chrono>			
+//using namespace std::chrono;
 
 
 inline float derCorput(unsigned n)
@@ -34,15 +32,12 @@ inline float derCorput(unsigned n)
 	return (float)reversedBinary / (float)(1 << bitCount);
 }
 
-
-
-
 // Test - calculate the numbers from 0 to the given @n with/without printing it. 
 // If @flag- than print the values.
 void test1(unsigned n, char flag)
 {
 	printf("Test: Geting the numbers in the van der Corput sequence [0 to %d]\n", n);
-	auto begin = high_resolution_clock::now();
+	//auto begin = high_resolution_clock::now();
 
 	if (flag)
 		for (unsigned i = 0; i < n; ++i)
@@ -51,15 +46,15 @@ void test1(unsigned n, char flag)
 		for (unsigned i = 0; i < n; ++i)
 			derCorput(i);
 
-	auto end = high_resolution_clock::now();
-	auto ticks = duration_cast<microseconds>(end - begin);
+	//auto end = high_resolution_clock::now();
+	//auto ticks = duration_cast<microseconds>(end - begin);
 
-	printf("It took me %d microseconds.\n", ticks.count());
+	//printf("It took me %d microseconds.\n", ticks.count());
 }
 
 int main()
 {
-	test1(20, 1);
+	test1(100, 1);
 	test1(1000000, 0);
 	test1(10000000, 0);
 	test1(100000000, 0);
