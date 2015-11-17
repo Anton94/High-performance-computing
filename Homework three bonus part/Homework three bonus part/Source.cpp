@@ -57,10 +57,10 @@ inline static void bar(float(&inout)[8])
 		rightSideElements[6],
 		leftGERight[6],
 		leftLTRight[6],
-		leftElementsGE[6],
-		leftElementsLT[6],
-		rightElementsGE[6],
-		rightElementsLT[6];
+		leftElementsGE[6], // swaped elements on the left part of comparison
+		leftElementsLT[6], // not-swaped elements on the left part of comparison
+		rightElementsGE[6], // swaped elements on the right part of comparison
+		rightElementsLT[6]; // not-swaped elements on the right part of comparison
 	float resultLeftElements[6][4], resultRightElements[6][4];
 
 	const size_t idx[][2] = {
@@ -87,7 +87,8 @@ inline static void bar(float(&inout)[8])
 	rightElementsGE[0] = _mm_and_ps(leftSideElements[0], leftGERight[0]);  // If the element on the left side is bigger or equal to the element on the right side - swaps, so writes on the element on the right side to be the element on the left.
 	rightElementsLT[0] = _mm_and_ps(rightSideElements[0], leftLTRight[0]); // If the element on the left side is less than element on the right side - don`t swap and writes the element on the right side on it`s place.
 
-	// Now let`s combine the elements, because we have two vectors with inverted zeros, so on OR operation will do it.
+	// Now let`s combine the elements, because we have two vectors @leftGERight and @leftLTRight, which are basically inverted, so one OR operation will do it.
+	// (in the @leftElemetnsGE will have something like [0, 0, element, element] and in the @leftElemetnsLT will be [element, element, 0, 0]) 
 	leftSideElements[0] = _mm_or_ps(leftElementsGE[0], leftElementsLT[0]); 
 	rightSideElements[0] = _mm_or_ps(rightElementsGE[0], rightElementsLT[0]);
 
@@ -288,6 +289,9 @@ void test()
 
 	std::cout << std::endl;
 }
+
+
+
 //
 //int main()
 //{
