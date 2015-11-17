@@ -1,9 +1,17 @@
+/*
+	Anton Vasilev Dudov
+	71488
+
+	Homework 3.0 
+	HPC 2015
+*/
+
 #include <stdio.h> // printf
 #include <cstdlib> // rand
-#include "immintrin.h"
-
-#include <chrono>			
-using namespace std::chrono;
+#include <immintrin.h> // _mm256_set_epi8 & _mm256_storeu_si256
+//
+//#include <chrono> // For time checking
+//using namespace std::chrono; // For time checking
 
 inline void reverseBasic(char* bytes, int numChunks);
 inline void reverseBasicWithoutSecondLoop(char* bytes, int numChunks);
@@ -12,7 +20,6 @@ void testValueValidation(void(*pFunc)(char*, int), int size, char flagForPrintVa
 void testTime(void(*pFunc)(char*, int), int numChunks);
 void printArr(char * arr, int size);
 bool compareArrayWithReversedOneByChunks(char * arr, char * arrReversed, int chunks, char flag);
-
 
 
 inline void reverseBasic(char* bytes, int numChunks)
@@ -207,27 +214,26 @@ inline void reverse(char * bytes, int numChunks)
 // Runs the given function and prints the taken time.
 void testTime(void (*pFunc)(char* , int), int numChunks)
 {	
-	int sizeMul64 = numChunks << 6;
-	char * arr = new char[sizeMul64];
+	//int sizeMul64 = numChunks << 6;
+	//char * arr = new char[sizeMul64];
 
-	printf("Starting time test with %d chunks (%d elements)!\n", numChunks, sizeMul64);
+	//printf("Starting time test with %d chunks (%d elements)!\n", numChunks, sizeMul64);
 
-	// Fill with some random values.
-	srand(0);
-	for (size_t i = 0; i < sizeMul64; ++i)
-		arr[i] = rand() % 256 - 128; // -128 to 127
+	//// Fill with some random values.
+	//srand(0);
+	//for (size_t i = 0; i < sizeMul64; ++i)
+	//	arr[i] = rand() % 256 - 128; // -128 to 127
 
+	//auto begin = high_resolution_clock::now();
 
-	auto begin = high_resolution_clock::now();
+	//pFunc(arr, numChunks);
 
-	pFunc(arr, numChunks);
+	//auto end = high_resolution_clock::now();
+	//auto ticks = duration_cast<microseconds>(end - begin);
 
-	auto end = high_resolution_clock::now();
-	auto ticks = duration_cast<microseconds>(end - begin);
+	//printf(" ---> It took me %d microseconds.\n", ticks.count());
 
-	printf(" ---> It took me %d microseconds.\n", ticks.count());
-
-	delete[] arr;
+	//delete[] arr;
 }
 
 
@@ -310,39 +316,38 @@ void printArr(char * arr, int size)
 int main()
 {
 	//testValueValidation(reverseBasicWithoutSecondLoop, 3, true);
-
 	//testValueValidation(reverse, 3, true);
 
 	printf("\n\Value validation testing Basic:\n");
-	testValueValidation(reverseBasic, 13, false);
-	testValueValidation(reverseBasic, 26, false);
-	testValueValidation(reverseBasic, 2 << 10, false); // 2 ^ 21 	
+	testValueValidation(reverseBasic, 1 << 4, false);  // 2 ^ 4 chuncks
+	testValueValidation(reverseBasic, 1 << 10, false); // 2 ^ 10 chuncks
+	testValueValidation(reverseBasic, 1 << 15, false); // 2 ^ 15 chuncks 	
 
 	printf("\n\Value validation testing without secon loop:\n");
-	testValueValidation(reverseBasicWithoutSecondLoop, 13, false);
-	testValueValidation(reverseBasicWithoutSecondLoop, 26, false);
-	testValueValidation(reverseBasicWithoutSecondLoop, 2 << 10, false); // 2 ^ 21 
+	testValueValidation(reverseBasicWithoutSecondLoop, 1 << 4, false);
+	testValueValidation(reverseBasicWithoutSecondLoop, 1 << 10, false);
+	testValueValidation(reverseBasicWithoutSecondLoop, 1 << 15, false);
 
 	printf("\n\Value validation testing with intrinsics:\n");
-	testValueValidation(reverse, 13, false);
-	testValueValidation(reverse, 26, false);
-	testValueValidation(reverse, 2 << 10, false); // 2 ^ 21 
+	testValueValidation(reverse, 1 << 4, false);
+	testValueValidation(reverse, 1 << 10, false);
+	testValueValidation(reverse, 2 << 15, false);
 
-	printf("\n\nTime testing (Basic, without second loop, intrinsics):\n");
-	testTime(reverseBasic, 1 << 16);
-	testTime(reverseBasicWithoutSecondLoop, 1 << 16);
-	testTime(reverse, 1 << 16);
-	printf("\n");
+	//printf("\n\nTime testing (Basic, without second loop, intrinsics):\n");
+	//testTime(reverseBasic, 1 << 16);
+	//testTime(reverseBasicWithoutSecondLoop, 1 << 16);
+	//testTime(reverse, 1 << 16);
+	//printf("\n");
 
-	testTime(reverseBasic, 1 << 20);
-	testTime(reverseBasicWithoutSecondLoop, 1 << 20);
-	testTime(reverse, 1 << 20);	
-	printf("\n");
+	//testTime(reverseBasic, 1 << 20);
+	//testTime(reverseBasicWithoutSecondLoop, 1 << 20);
+	//testTime(reverse, 1 << 20);	
+	//printf("\n");
 
-	testTime(reverseBasic, 1 << 24);
-	testTime(reverseBasicWithoutSecondLoop, 1 << 24);
-	testTime(reverse, 1 << 24);
-	printf("\n");
+	//testTime(reverseBasic, 1 << 24);
+	//testTime(reverseBasicWithoutSecondLoop, 1 << 24);
+	//testTime(reverse, 1 << 24);
+	//printf("\n");
 
 	return 0;
 }
