@@ -1,6 +1,6 @@
 /*
-	Anton Vasilev Dudov
-	71488
+	Name: Anton Vasilev Dudov
+	#71488
 
 	Homework 3
 	HPC 2015
@@ -9,7 +9,6 @@
 #include <stdio.h> // printf
 #include <cstdlib> // rand
 #include <immintrin.h> // _mm256_set_epi8 & _mm256_storeu_si256 and the intrinsics for the bonus part (SSE)
-//
 //#include <chrono> // For time checking
 //using namespace std::chrono; // For time checking
 
@@ -20,6 +19,11 @@ void testValueValidation(void(*pFunc)(char*, int), int size, char flagForPrintVa
 void testTime(void(*pFunc)(char*, int), int numChunks);
 void printArr(char * arr, int size);
 bool compareArrayWithReversedOneByChunks(char * arr, char * arrReversed, int chunks, char flag);
+// BONUS PART
+inline static void foo(float(&inout)[8]);
+inline static void bar(float(&inout)[8]);
+static void insertion_sort(float(&inout)[8]);
+void test();
 
 
 inline void reverseBasic(char* bytes, int numChunks)
@@ -352,8 +356,8 @@ inline static void bar(float(&inout)[8])
 		rightSideElements[6],
 		leftGERight[6],
 		leftLTRight[6],
-		leftElementsGE[6], // swaped elements on the left part of comparison
-		leftElementsLT[6], // not-swaped elements on the left part of comparison
+		leftElementsGE[6],  // swaped elements on the left part of comparison
+		leftElementsLT[6],  // not-swaped elements on the left part of comparison
 		rightElementsGE[6], // swaped elements on the right part of comparison
 		rightElementsLT[6]; // not-swaped elements on the right part of comparison
 	float resultLeftElements[6][4], resultRightElements[6][4];
