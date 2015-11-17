@@ -46,9 +46,21 @@ __inline static void foo(float(&inout)[8]) {
 }
 
 
-inline static void bar(float(&inout)[8]) {
+__inline static void bar(float(&inout)[8]) 
+{
+	static __m128 first;
+	static __m128 second;
+	static __m128 cmp1;
+	static __m128 cmp2;
+	static __m128 res1;
+	static __m128 res2;
+	static __m128 temp;
+	static __m128 res3;
+	static __m128 res4;
+	static float result1[4];
+	static float result2[4];
 
-	static const size_t idx[][2] = {
+	const size_t idx[][2] = {
 			{ 0, 1 }, { 3, 2 }, { 4, 5 }, { 7, 6 },
 			{ 0, 2 }, { 1, 3 }, { 6, 4 }, { 7, 5 },
 			{ 0, 1 }, { 2, 3 }, { 5, 4 }, { 7, 6 },
@@ -56,24 +68,39 @@ inline static void bar(float(&inout)[8]) {
 			{ 0, 2 }, { 1, 3 }, { 4, 6 }, { 5, 7 },
 			{ 0, 1 }, { 2, 3 }, { 4, 5 }, { 6, 7 }
 	};
-	static const size_t size = sizeof(idx) / sizeof(idx[0]);
-	float temp;
-	
-	for (size_t i = 0; i < size; ++i) 
+
+	for (int i = 0; i < 24; i += 4)
 	{
-		if (inout[idx[i][0]] > inout[idx[i][1]])
-		{			
-			temp = inout[idx[i][0]];
-			inout[idx[i][0]] = inout[idx[i][1]];
-			inout[idx[i][1]] = temp;
+		first = _mm_set_ps(inout[idx[i + 3][0]], inout[idx[i + 2][0]], inout[idx[i + 1][0]], inout[idx[i][0]]);
+		second = _mm_set_ps(inout[idx[i + 3][1]], inout[idx[i + 2][1]], inout[idx[i + 1][1]], inout[idx[i][1]]);
+
+		cmp1 = _mm_cmpge_ps(first, second);
+		cmp2 = _mm_cmpgt_ps(second, first);
+
+		res1 = _mm_and_ps(second, cmp1);
+		res2 = _mm_and_ps(first, cmp2);
+
+		res3 = _mm_and_ps(first, cmp1);
+		res4 = _mm_and_ps(second, cmp2);
+
+		first = _mm_or_ps(res1, res2);
+		second = _mm_or_ps(res3, res4);
+
+		// put them on the positions
+		_mm_storeu_ps(result1, first);
+		_mm_storeu_ps(result2, second);
+
+		for (int j = 0; j < 4; ++j)
+		{
+			inout[idx[i + j][0]] = result1[j];
+			inout[idx[i + j][1]] = result2[j];
 		}
 	}
 }
 
 
-static void insertion_sort(
-	float(&inout)[8]) {
-
+static void insertion_sort(float(&inout)[8]) 
+{
 	for (size_t i = 1; i < 8; ++i) {
 		size_t pos = i;
 		const float val = inout[pos];
@@ -88,10 +115,8 @@ static void insertion_sort(
 }
 
 
-static size_t verify(
-	const size_t count,
-	float* const input) {
-
+static size_t verify(const size_t count, float* const input) 
+{
 	assert(0 == count % 8);
 
 	for (size_t i = 0; i < count; i += 8)
@@ -104,7 +129,7 @@ static size_t verify(
 
 int main(int argc, char** argv) {
 
-	unsigned alt = 2;
+	unsigned alt = 1;
 	const bool err = argc > 2 || argc == 2 && 1 != sscanf(argv[1], "%u", &alt);
 
 	if (err || alt > 2) {
@@ -116,7 +141,7 @@ int main(int argc, char** argv) {
 		return -3;
 	}
 
-	const size_t count = 1 << 20;
+	const size_t count = 1 << 27;
 	float* const input = (float*)malloc(sizeof(float) * count + 63);
 	float* const input_aligned = reinterpret_cast< float* >(uintptr_t(input) + 63 & -64);
 
