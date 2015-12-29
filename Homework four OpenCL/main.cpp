@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <cstdlib>
+#include <fstream>
 #include <cmath>
 #ifdef __APPLE__
 #   include "OpenCL/cl.h"
@@ -33,7 +34,7 @@ inline void __checkError(const char* file, int line, cl_int error) {
 
 void helloOpenCL(const float* in, float* out, int count)
 {
-    printf("Calculating with %d elements\n", count);
+    printf("\nCalculating with %d elements\n", count);
     cl_int err = CL_SUCCESS; // error code returned from API calls
 
     // Connect to a compute device
@@ -54,14 +55,6 @@ void helloOpenCL(const float* in, float* out, int count)
     err = clGetPlatformIDs(numPlatforms, platforms, NULL);
     CHECK_ERROR(err);
 
-    //print the name of each and every platfrom we had found
-    for (int i = 0; i < numPlatforms; ++i) {
-        char chBuffer[1024];
-        err = clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, 1024, &chBuffer, NULL);
-        CHECK_ERROR(err);
-        printf("found platform '%i' = \"%s\"\n", i, chBuffer);
-    }
-
     err = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
     CHECK_ERROR(err);
 
@@ -80,33 +73,52 @@ void helloOpenCL(const float* in, float* out, int count)
     commands = clCreateCommandQueue(context, device_id, 0, &err);
     CHECK_ERROR(err);
 
-    // (3)Compile the kernel itself from the source buffer
+    // (3)Compile the kernel itself from the source file kernel.cl
     cl_program program; // compute program, may have multiple kernels in it
 
-/*  Get the program from .cl file */
+/*Get the program from .cl file */
 
-    FILE* programHandle;
-    size_t programSize, kernelSourceSize;
-    char *programBuffer;
+    std::ifstream inFile("kernel.cl", std::ios::in);
+    size_t programSize;
+    char * programBuffer;
+    inFile.seekg(0, std::ios::end);
+    programSize = inFile.tellg();
+    inFile.seekg(0, std::ios::beg);
 
-    programHandle = fopen("kernel.cl", "r");
-    fseek(programHandle, 0, SEEK_END);
-    programSize = ftell(programHandle);
-    rewind(programHandle);
-
-    // read kernel source into buffer
-    programBuffer = (char*) malloc(programSize + 1);
+    // Read kernel source into buffer
+    programBuffer = new char[programSize + 1];
     programBuffer[programSize] = '\0';
-    fread(programBuffer, sizeof(char), programSize, programHandle);
-    fclose(programHandle);
+
+    size_t openBracketCount = 0; // Read the file till it`s last close bracket, because it get fucked up sometimes...
+    for(int i = 0; i < programSize ; ++i)
+    {
+        inFile.get(programBuffer[i]);
+        if (programBuffer[i] == '{')
+        {
+            ++openBracketCount;
+        }
+        else if(programBuffer[i] == '}') // A little bad way to fix the file reading because sometimes it reads more symbols and that`s the solution I came to....
+        {
+            if (openBracketCount > 1)
+            {
+                --openBracketCount;
+            }
+            else
+            {
+                programBuffer[i + 1] = '\0';
+                break;
+            }
+        }
+    }
+
+    inFile.clear();
+    inFile.close();
 
 /*  end of getting the kernel source */
 
     //create a program id
     program = clCreateProgramWithSource(context, 1, (const char **) & programBuffer, NULL, &err);
     CHECK_ERROR(err);
-
-
     //compile the program
     err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     if (err != CL_SUCCESS) {
@@ -115,17 +127,16 @@ void helloOpenCL(const float* in, float* out, int count)
         printf("Error: Failed to build program executable!\n");
         clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
         printf("%s\n", buffer);
-    /* TO DO DELETE*/
-
-        // read kernel source back in from program to check
-        char * kernelSource = NULL;
-        clGetProgramInfo(program, CL_PROGRAM_SOURCE, 0, NULL, &kernelSourceSize);
-        kernelSource = (char*) malloc(kernelSourceSize);
-        clGetProgramInfo(program, CL_PROGRAM_SOURCE, kernelSourceSize, kernelSource, NULL);
-        printf("\nKernel source:\n\n%s\n", kernelSource);
-        free(kernelSource);
-
-    /*TO DO DELETE */
+        /* TO DO DELETE*/
+            // read kernel source back in from program to check
+            char * kernelSource = NULL;
+            size_t kernelSourceSize;
+            clGetProgramInfo(program, CL_PROGRAM_SOURCE, 0, NULL, &kernelSourceSize);
+            kernelSource = (char*) malloc(kernelSourceSize);
+            clGetProgramInfo(program, CL_PROGRAM_SOURCE, kernelSourceSize, kernelSource, NULL);
+            printf("\nKernel source:\n\n%s\n", kernelSource);
+            free(kernelSource);
+        /*TO DO DELETE */
         exit(EXIT_FAILURE);
     }
 
@@ -190,7 +201,7 @@ void helloOpenCL(const float* in, float* out, int count)
     clReleaseKernel(kernel);
     clReleaseCommandQueue(commands);
     clReleaseContext(context);
-    free(programBuffer);
+    delete[] programBuffer;
     delete[] platforms;
     printf("...Done\n");
 }
@@ -225,6 +236,8 @@ bool checkResultValues(const float* data, const float* result, int count, bool p
 
     //Print a brief summary detailing the results
     printf("Computed '%d/%d' correct values!\n", correct, (int)count);
+
+    return (correct == count);
 }
 
 
@@ -257,6 +270,9 @@ void test1(const size_t DATA_SIZE, bool printValues = true, bool correctnessValu
 int main(int argc, char** argv)
 {
     test1(16, true, true);
+    test1(1000, false, true); // Ako tova go nqma, vsi4ko vurvi dobre
+    test1(10000, false, true); // Ako tova go nqma, vsi4ko vurvi dobre
+    test1(100000, false, true); // Ako tova go nqma, vsi4ko vurvi dobre
     test1(1000000, false, true);
     test1(10000000, false, false);
     test1(100000000, false, false);
