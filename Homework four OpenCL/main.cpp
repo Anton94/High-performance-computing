@@ -1,12 +1,14 @@
-//example for OpenCL kernel that accepts 2 array of floats(in and out)
-//and computes out[i] = in[i] * in[i]
-
 /*
-    Fixes:  1) Added #include <cstdlib>
-            2) Fixed #include "CL/cl.h"
-            3) err = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
-                So, NULL can`t be added there!
-            4) Float comparison fixed- with epsilon value
+    Anton Vasilev Dudov
+    #71488
+
+    Homework four - OpenCL
+
+    A little fixes to example:  1) Added #include <cstdlib>
+                                2) Fixed #include "CL/cl.h"
+                                3) err = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
+                                    So, NULL can`t be there as first argument
+                                4) Float comparison fixed- with epsilon value
 */
 
 
@@ -34,7 +36,6 @@ inline void __checkError(const char* file, int line, cl_int error) {
 
 void helloOpenCL(const float* in, float* out, int count)
 {
-    printf("\nCalculating with %d elements\n", count);
     cl_int err = CL_SUCCESS; // error code returned from API calls
 
     // Connect to a compute device
@@ -45,7 +46,6 @@ void helloOpenCL(const float* in, float* out, int count)
     //third arg the number of the platforms the system has
     err = clGetPlatformIDs(0, NULL, &numPlatforms);
     CHECK_ERROR(err);
-    printf("Found %i platforms\n", (int)numPlatforms);
     if (numPlatforms == 0)
         exit(EXIT_FAILURE);
 
@@ -77,10 +77,20 @@ void helloOpenCL(const float* in, float* out, int count)
     cl_program program; // compute program, may have multiple kernels in it
 
 /*Get the program from .cl file */
-
-    std::ifstream inFile("kernel.cl", std::ios::in);
+    // Read as binary file.
+    std::ifstream file("kernel.cl", std::ios::in|std::ios::binary|std::ios::ate);
     size_t programSize;
     char * programBuffer;
+    programSize = file.tellg();
+    programBuffer = new char [programSize + 1];
+    programBuffer[programSize] = '\0';
+    file.seekg (0, std::ios::beg);
+    file.read (programBuffer, programSize);
+    file.close();
+
+    /*
+    // Reading till last close bracket - from text file.
+    std::ifstream inFile("kernel.cl", std::ios::in);
     inFile.seekg(0, std::ios::end);
     programSize = inFile.tellg();
     inFile.seekg(0, std::ios::beg);
@@ -112,9 +122,9 @@ void helloOpenCL(const float* in, float* out, int count)
     }
 
     inFile.clear();
-    inFile.close();
+    inFile.close(); */
 
-/*  end of getting the kernel source */
+/* End of getting the kernel source from file*/
 
     //create a program id
     program = clCreateProgramWithSource(context, 1, (const char **) & programBuffer, NULL, &err);
@@ -203,13 +213,12 @@ void helloOpenCL(const float* in, float* out, int count)
     clReleaseContext(context);
     delete[] programBuffer;
     delete[] platforms;
-    printf("...Done\n");
 }
 
 bool checkResultValues(const float* data, const float* result, int count, bool printValues, const float EPSILON)
 {
     if (printValues)
-            printf("Epsilon %.50f\n", EPSILON);
+            printf("\tEpsilon %.50f\n", EPSILON);
 
     unsigned int correct = 0;               // number of correct results returned
     float realValue;
@@ -218,64 +227,71 @@ bool checkResultValues(const float* data, const float* result, int count, bool p
     if(std::fabs(result[0] - realValue) < EPSILON)
         correct++;
     if (printValues)
-        printf("Expected %f and result is %f\n", realValue, result[0]);
+        printf("\tExpected %f and result is %f\n", realValue, result[0]);
     for(int i = 1; i < count - 1; i++)
     {
         realValue = cbrt(data[i-1] * data[i] * data[i + 1]);
         if(std::fabs(result[i] - realValue) < EPSILON)
             correct++;
         if (printValues)
-            printf("Expected %f and result is %f\n", (cbrt(data[i-1] * data[i] * data[i + 1])), result[i]);
+            printf("\tExpected %f and result is %f\n", (cbrt(data[i-1] * data[i] * data[i + 1])), result[i]);
     }
     // Check last element
     realValue = cbrt(data[count - 2] * data[count - 1] * data[0]);
     if(std::fabs(result[count - 1] - realValue) < EPSILON)
         correct++;
     if (printValues)
-        printf("Expected %f and result is %f\n", realValue, result[count - 1]);
+        printf("\tExpected %f and result is %f\n", realValue, result[count - 1]);
 
     //Print a brief summary detailing the results
-    printf("Computed '%d/%d' correct values!\n", correct, (int)count);
+    printf("\tComputed '%d/%d' correct values!\n", correct, (int)count);
 
     return (correct == count);
 }
-
 
 // Test function. Makes buffers with the given size and fills it with random numbers, geometry mean of them (-1 0 and +1 elements) will be close to 1.
 // If printValues is true- prints the values and expected once and such...
 void test1(const size_t DATA_SIZE, bool printValues = true, bool correctnessValues = true)
 {
+    printf("Test with %d elements...", DATA_SIZE);
+
     // allocate memory on the host and fill it with random data
     float * data = new float[DATA_SIZE];
     for(int i = 0; i < DATA_SIZE; i++)
-    {
         data[i] = rand() / (float)RAND_MAX;
-        //if (printValues)
-        //    printf("%f ", data[i]);
-    }
 
     float * result = new float[DATA_SIZE];
 
+    printf("Calculating with GPU...");
     helloOpenCL(data, result, DATA_SIZE);
+    printf("Done\n");
 
     if (correctnessValues)
     {
-        const float EPSILON = 1e-7; // For numbers around one...
-        checkResultValues(data, result, DATA_SIZE, printValues, EPSILON);
+        printf("\tValue validation:\n");
+        const float EPSILON = 1e-7; // For numbers around one it`s good epsilon
+        if (checkResultValues(data, result, DATA_SIZE, printValues, EPSILON))
+            printf("\tStatus passed!\n");
+        else
+            printf("\tStatus failed!\n");
     }
 
+    printf("\n");
     delete [] data;
     delete [] result;
 }
+
 int main(int argc, char** argv)
 {
     test1(16, true, true);
-    test1(1000, false, true); // Ako tova go nqma, vsi4ko vurvi dobre
-    test1(10000, false, true); // Ako tova go nqma, vsi4ko vurvi dobre
-    test1(100000, false, true); // Ako tova go nqma, vsi4ko vurvi dobre
+    test1(1000, false, true);
+    test1(10000, false, true);
+    test1(100000, false, true);
     test1(1000000, false, true);
-    test1(10000000, false, false);
-    test1(100000000, false, false);
+    test1(10000000, false, true);
+    test1(100000000, false, true);
+    test1(150000000, false, true);
+    test1(150000000, false, true);
 
     return 0;
 }
