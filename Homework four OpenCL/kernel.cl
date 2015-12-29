@@ -1,9 +1,9 @@
-__kernel void square(
-   __global const float* restrict input,
-   __global float* restrict output,
-   const unsigned int count)
+__kernel void helloOpenCLKernel(
+   __global const float* restrict in,
+   __global float* out,
+   int count)
 {
    int i = get_global_id(0);
-   if(i < count)
-       output[i] = input[i] + input[i];
+   if(i < count && i > 0)
+       out[i] = cbrt(in[i - 1] * in[i] * in[i + 1]);
 }

@@ -2,21 +2,22 @@
 //and computes out[i] = in[i] * in[i]
 
 /*
-    Fixes:  1) Added <cstdlib>
-            2) added "CL/cl.h"
+    Fixes:  1) Added #include <cstdlib>
+            2) Fixed #include "CL/cl.h"
             3) err = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
                 So, NULL can`t be added there!
-
+            4) Float comparison fixed- with epsilon value
 */
+
 
 #include <stdio.h>
 #include <cstdlib>
+#include <cmath>
 #ifdef __APPLE__
 #   include "OpenCL/cl.h"
 #else
 #   include "CL/cl.h"
 #endif
-
 
 
 //macro we use to check if any of the OpenCL API returned error
@@ -29,37 +30,11 @@ inline void __checkError(const char* file, int line, cl_int error) {
     }
 }
 
-//the size of the buffers that we will alloc/dealloc on the devices
-const size_t DATA_SIZE = 1024;
-const float EPSILON = 1e-15;
-// (1) the source of the GPU kernel itself - it does simple x*x on arrays
-const char* KERNEL_SOURCE = "\n" \
-"__kernel void square(                                                  \n" \
-"   __global const float* restrict input,                               \n" \
-"   __global float* restrict output,                                    \n" \
-"   const unsigned int count)                                           \n" \
-"{                                                                      \n" \
-"   int i = get_global_id(0);                                           \n" \
-"   if(i < count)                                                       \n" \
-"   {                                                                   \n" \
-"       output[i] = input[i] * input[i];                                \n" \
-"   }                                                                   \n" \
-"}                                                                      \n" \
-"\n";
 
-
-int main(int argc, char** argv) {
-    cl_int err = CL_SUCCESS; // error code returned from api calls
-
-    //(2) allocate memory on the host and fill it with random data
-    //we will later transfer this memory to the devices and use
-    //it as "input" parameter of the "square" kernel
-    float data[DATA_SIZE];
-    for(int i = 0; i < DATA_SIZE; i++)
-    {
-        data[i] = rand() / (float)RAND_MAX;
-     //   printf("%f ", data[i]);
-    }
+void helloOpenCL(const float* in, float* out, int count)
+{
+    printf("Calculating with %d elements\n", count);
+    cl_int err = CL_SUCCESS; // error code returned from API calls
 
     // Connect to a compute device
     cl_device_id device_id;// compute device id
@@ -108,13 +83,11 @@ int main(int argc, char** argv) {
     // (3)Compile the kernel itself from the source buffer
     cl_program program; // compute program, may have multiple kernels in it
 
-
-
 /*  Get the program from .cl file */
 
     FILE* programHandle;
     size_t programSize, kernelSourceSize;
-    char *programBuffer, *kernelSource;
+    char *programBuffer;
 
     programHandle = fopen("kernel.cl", "r");
     fseek(programHandle, 0, SEEK_END);
@@ -134,17 +107,6 @@ int main(int argc, char** argv) {
     CHECK_ERROR(err);
 
 
-    /* TO DO DELETE*/
-// read kernel source back in from program to check
-    /*
-    clGetProgramInfo(program, CL_PROGRAM_SOURCE, 0, NULL, &kernelSourceSize);
-    kernelSource = (char*) malloc(kernelSourceSize);
-    clGetProgramInfo(program, CL_PROGRAM_SOURCE, kernelSourceSize, kernelSource, NULL);
-    printf("nKernel source:nn%sn", kernelSource);
-    free(kernelSource);
-    */
-/*TO DO DELETE */
-
     //compile the program
     err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     if (err != CL_SUCCESS) {
@@ -153,13 +115,24 @@ int main(int argc, char** argv) {
         printf("Error: Failed to build program executable!\n");
         clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
         printf("%s\n", buffer);
+    /* TO DO DELETE*/
+
+        // read kernel source back in from program to check
+        char * kernelSource = NULL;
+        clGetProgramInfo(program, CL_PROGRAM_SOURCE, 0, NULL, &kernelSourceSize);
+        kernelSource = (char*) malloc(kernelSourceSize);
+        clGetProgramInfo(program, CL_PROGRAM_SOURCE, kernelSourceSize, kernelSource, NULL);
+        printf("\nKernel source:\n\n%s\n", kernelSource);
+        free(kernelSource);
+
+    /*TO DO DELETE */
         exit(EXIT_FAILURE);
     }
 
     //get the kernel we want from the compiled program
     cl_kernel kernel;// compute kernel
 
-    kernel = clCreateKernel(program, "square", &err);
+    kernel = clCreateKernel(program, "helloOpenCLKernel", &err);
     CHECK_ERROR(err);
 
     //Create the input and output arrays in device memory for our calculation
@@ -168,21 +141,22 @@ int main(int argc, char** argv) {
 
     //(4) allocate memory on the device
     //memory marked as input/output can increase the performance of the kernel
-    input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * DATA_SIZE, NULL, &err);
+    input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * count, NULL, &err);
     CHECK_ERROR(err);
-    output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * DATA_SIZE, NULL, &err);
+    output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * count, NULL, &err);
     CHECK_ERROR(err);
 
     //Copy data to the device memory
-    err = clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, sizeof(float) * DATA_SIZE, data, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, sizeof(float) * count, in, 0, NULL, NULL);
     CHECK_ERROR(err);
 
     //Prepare to call the kernel
     //Set the arguments to our compute kernel
+    int countLessOne = count - 1;
     err = 0;
     err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
     err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
-    err |= clSetKernelArg(kernel, 2, sizeof(unsigned int), &DATA_SIZE);
+    err |= clSetKernelArg(kernel, 2, sizeof(unsigned int), &countLessOne);
     CHECK_ERROR(err);
 
     size_t global;  // number of thread blocks
@@ -194,30 +168,20 @@ int main(int argc, char** argv) {
 
     //(5) Execute the kernel over the entire range of our 1d input data set
     //using the maximum number of work group items for this device
-    global = DATA_SIZE;
+    global = count;
     err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
     CHECK_ERROR(err);
 
     //Wait for the command commands to get serviced before reading back results
     clFinish(commands);
 
-    float results[DATA_SIZE];// results returned from device
-
     //(6) Read back the results from the device to verify the output
-    err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * DATA_SIZE, results, 0, NULL, NULL );
+    err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * count, out, 0, NULL, NULL );
     CHECK_ERROR(err);
 
-    unsigned int correct;               // number of correct results returned
-    //Validate results
-    correct = 0;
-    for(int i = 0; i < DATA_SIZE; i++) {
-        if(abs(results[i] - (data[i] * data[i])) < EPSILON)
-            correct++;
-        //printf("Expected %f and result is %f\n", (data[i] * data[i]), results[i]);
-    }
-
-    //Print a brief summary detailing the results
-    printf("Computed '%d/%d' correct values!\n", correct, (int)DATA_SIZE);
+    // Fill first and last element
+    out[0] = cbrt(in[count - 1] * in[0] * in[1]);
+    out[count - 1] = cbrt(in[count - 2] * in[count - 1] * in[0]);
 
     //Shutdown and cleanup
     clReleaseMemObject(input);
@@ -228,73 +192,74 @@ int main(int argc, char** argv) {
     clReleaseContext(context);
     free(programBuffer);
     delete[] platforms;
-    return 0;
+    printf("...Done\n");
+}
+
+bool checkResultValues(const float* data, const float* result, int count, bool printValues, const float EPSILON)
+{
+    if (printValues)
+            printf("Epsilon %.50f\n", EPSILON);
+
+    unsigned int correct = 0;               // number of correct results returned
+    float realValue;
+    // Check first element
+    realValue = cbrt(data[count - 1] * data[0] * data[1]);
+    if(std::fabs(result[0] - realValue) < EPSILON)
+        correct++;
+    if (printValues)
+        printf("Expected %f and result is %f\n", realValue, result[0]);
+    for(int i = 1; i < count - 1; i++)
+    {
+        realValue = cbrt(data[i-1] * data[i] * data[i + 1]);
+        if(std::fabs(result[i] - realValue) < EPSILON)
+            correct++;
+        if (printValues)
+            printf("Expected %f and result is %f\n", (cbrt(data[i-1] * data[i] * data[i + 1])), result[i]);
+    }
+    // Check last element
+    realValue = cbrt(data[count - 2] * data[count - 1] * data[0]);
+    if(std::fabs(result[count - 1] - realValue) < EPSILON)
+        correct++;
+    if (printValues)
+        printf("Expected %f and result is %f\n", realValue, result[count - 1]);
+
+    //Print a brief summary detailing the results
+    printf("Computed '%d/%d' correct values!\n", correct, (int)count);
 }
 
 
+// Test function. Makes buffers with the given size and fills it with random numbers, geometry mean of them (-1 0 and +1 elements) will be close to 1.
+// If printValues is true- prints the values and expected once and such...
+void test1(const size_t DATA_SIZE, bool printValues = true, bool correctnessValues = true)
+{
+    // allocate memory on the host and fill it with random data
+    float * data = new float[DATA_SIZE];
+    for(int i = 0; i < DATA_SIZE; i++)
+    {
+        data[i] = rand() / (float)RAND_MAX;
+        //if (printValues)
+        //    printf("%f ", data[i]);
+    }
 
+    float * result = new float[DATA_SIZE];
 
+    helloOpenCL(data, result, DATA_SIZE);
 
+    if (correctnessValues)
+    {
+        const float EPSILON = 1e-7; // For numbers around one...
+        checkResultValues(data, result, DATA_SIZE, printValues, EPSILON);
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-int main() {
-
-    cl_platform_id platform;
-    cl_device_id device;
-    cl_context context;
-    cl_program program;
-
-    FILE* programHandle;
-    size_t programSize, kernelSourceSize;
-    char *programBuffer, *kernelSource;
-
-    // get first available platform and gpu and create context
-    clGetPlatformIDs(1, &platform, NULL);
-    clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
-    context = clCreateContext(NULL, 1, &device, NULL, NULL, NULL);
-
-    // get size of kernel source
-    programHandle = fopen("kernel.cl", "r");
-    fseek(programHandle, 0, SEEK_END);
-    programSize = ftell(programHandle);
-    rewind(programHandle);
-
-    // read kernel source into buffer
-    programBuffer = (char*) malloc(programSize + 1);
-    programBuffer[programSize] = '\0';
-    fread(programBuffer, sizeof(char), programSize, programHandle);
-    fclose(programHandle);
-
-    // create program from buffer
-    program = clCreateProgramWithSource(context, 1,
-            (const char**) &programBuffer, &programSize, NULL);
-    free(programBuffer);
-
-    // read kernel source back in from program to check
-    clGetProgramInfo(program, CL_PROGRAM_SOURCE, 0, NULL, &kernelSourceSize);
-    kernelSource = (char*) malloc(kernelSourceSize);
-    clGetProgramInfo(program, CL_PROGRAM_SOURCE, kernelSourceSize, kernelSource, NULL);
-    printf("nKernel source:nn%sn", kernelSource);
-    free(kernelSource);
-
-    clReleaseContext(context);
-    return 0;
-
+    delete [] data;
+    delete [] result;
 }
-*/
+int main(int argc, char** argv)
+{
+    test1(16, true, true);
+    test1(1000000, false, true);
+    test1(10000000, false, false);
+    test1(100000000, false, false);
+
+    return 0;
+}

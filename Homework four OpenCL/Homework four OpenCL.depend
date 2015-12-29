@@ -1,7 +1,8 @@
 # depslib dependency file v1.0
-1451335056 source:c:\users\anton\documents\visual studio 2013\projects\high performance computing\homework four opencl\main.cpp
+1451393671 source:c:\users\anton\documents\visual studio 2013\projects\high performance computing\homework four opencl\main.cpp
 	<stdio.h>
 	<cstdlib>
+	<cmath>
 	"OpenCL/cl.h"
 	"CL/cl.h"
 
